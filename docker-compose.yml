@@ -1,0 +1,65 @@
+
+version: '2'
+services:
+    api:
+        image: screwdrivercd/screwdriver:stable
+        ports:
+            - 9001:80
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:rw
+            - ./data/:/tmp/sd-data/:rw
+        environment:
+            PORT: 80
+            URI: http://192.168.1.10:9001
+            ECOSYSTEM_UI: http://192.168.1.10:9000
+            ECOSYSTEM_STORE: http://192.168.1.10:9002
+            DATASTORE_PLUGIN: sequelize
+            DATASTORE_SEQUELIZE_DIALECT: sqlite
+            DATASTORE_SEQUELIZE_STORAGE: /tmp/sd-data/storage.db
+            EXECUTOR_PLUGIN: docker
+            EXECUTOR_QUEUE_ENABLED: "false"
+            SECRET_WHITELIST: "[]"
+            EXECUTOR_DOCKER_DOCKER: |
+                {
+                    "socketPath": "/var/run/docker.sock"
+                }
+            SCM_SETTINGS: |
+                {
+                    "github": {
+                        "plugin": "github",
+                        "config": {
+                            "username": "sd-buildbot",
+                            "secret": "SUPER-SECRET-SIGNING-THING",
+                            "oauthClientSecret": "9d819a0c89476df3cf965cda844800ddff1607ee",
+                            "email": "dev-null@screwdriver.cd",
+                            "oauthClientId": "0be416435d2c13770eb8"
+                        }
+                    }
+                }
+            SECRET_JWT_PRIVATE_KEY: |
+                -----BEGIN RSA PRIVATE KEY-----
+                $SECRET_JWT_PRIVATE_KEY
+                -----END RSA PRIVATE KEY-----
+            SECRET_JWT_PUBLIC_KEY: |
+                -----BEGIN PUBLIC KEY-----
+                $SECRET_JWT_PUBLIC_KEY
+                -----END PUBLIC KEY-----
+    ui:
+        image: screwdrivercd/ui:stable
+        ports:
+            - $UI_PORT:80
+        environment:
+            ECOSYSTEM_API: http://192.168.1.10:9001
+            ECOSYSTEM_STORE: http://192.168.1.10:9002
+
+    store:
+        image: screwdrivercd/store:stable
+        ports:
+            - 9002:80
+        environment:
+            ECOSYSTEM_UI: http://192.168.1.10:9000
+            URI: http://192.168.1.10:9002
+            SECRET_JWT_PUBLIC_KEY: |
+                -----BEGIN PUBLIC KEY-----
+                $SECRET_JWT_PUBLIC_KEY
+                -----END PUBLIC KEY-----
